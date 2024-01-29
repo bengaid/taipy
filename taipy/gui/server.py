@@ -23,6 +23,7 @@ import webbrowser
 from importlib import util
 from random import randint
 from urllib.parse import parse_qsl, urlparse
+import argparse
 
 from flask import Blueprint, Flask, json, jsonify, render_template, request, send_from_directory
 from flask_cors import CORS
@@ -38,6 +39,8 @@ from ._renderers.json import _TaipyJsonProvider
 from .config import ServerConfig
 from .custom._page import _ExternalResourceHandlerManager
 from .utils import _is_in_notebook, _is_port_open, _RuntimeManager
+
+from . import chalkit
 
 if t.TYPE_CHECKING:
     from .gui import Gui
@@ -275,6 +278,13 @@ class _Server:
         host_value = host if host != "0.0.0.0" else "localhost"
         self._host = host
         self._port = port
+        flask_log=True
+        
+        confc = argparse.Namespace(dev=False, sync=None, sync_clear=False, python_workers=None, xprjson_file=None, app_port=None, app_ip=None)
+        config = chalkit.AppConfig(confc)
+        root_manager = chalkit.RootManager(config, self.get_flask())
+
+        logging.getLogger('werkzeug').setLevel(logging.INFO)
         if _is_in_notebook() and notebook_proxy:  # pragma: no cover
             from .utils.proxy import NotebookProxy
 
@@ -291,7 +301,7 @@ class _Server:
             )
         if not flask_log:
             log = logging.getLogger("werkzeug")
-            log.disabled = True
+            log.disabled = False
             if not is_running_from_reloader():
                 _TaipyLogger._get_logger().info(f" * Server starting on http://{host_value}:{port}")
             else:
@@ -307,7 +317,7 @@ class _Server:
             "app": self._flask,
             "host": host,
             "port": port,
-            "debug": debug,
+            "debug": True,
             "use_reloader": use_reloader,
         }
         if self.__ssl_context is not None:
@@ -315,7 +325,12 @@ class _Server:
         # flask-socketio specific conditions for 'allow_unsafe_werkzeug' parameters to be popped out of kwargs
         if self._get_async_mode() == "threading" and (not sys.stdin or not sys.stdin.isatty()):
             run_config = {**run_config, "allow_unsafe_werkzeug": allow_unsafe_werkzeug}
+        def print_routes():
+            for rule in self.get_flask().url_map.iter_rules():
+                print(f'Endpoint: {rule.endpoint}, Route: {rule}')
+        print_routes()        
         self._ws.run(**run_config)
+
 
     def stop_thread(self):
         if hasattr(self, "_thread") and self._thread.is_alive() and self._is_running:
