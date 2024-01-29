@@ -13,6 +13,8 @@ from __future__ import annotations
 from datetime import date, datetime, time
 from json import JSONEncoder
 from pathlib import Path
+import io, base64
+import json
 
 from flask.json.provider import DefaultJSONProvider
 
@@ -32,6 +34,21 @@ def _default(o):
         return _date_to_string(o)
     if isinstance(o, Path):
         return str(o)
+    if "plotly.graph_objs._figure.Figure" in str(type(o)):
+        return json.loads(o.to_json(validate=True, pretty=False))
+#    if "matplotlib.figure.Figure" in str(type(o)): # seems impossible in other thread than main thread
+#        buf = io.BytesIO()
+#        o.savefig(buf, format='png')
+#        buf.seek(0)
+#        img_str = base64.b64encode(buf.read()).decode('UTF-8')    
+#        return img_str
+    if "pandas.core.frame.DataFrame" in str(type(o)):
+        return o.to_json(orient='records')
+    if "folium.folium.Map" in str(type(o)):
+        return o._repr_html_()
+    if "geopandas.geodataframe.GeoDataFrame" in str(type(o)):
+        return o.to_json()
+    
     try:
         raise TypeError(f"Object of type {o.__class__.__name__} is not JSON serializable")
     except Exception as e:
