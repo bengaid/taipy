@@ -43,7 +43,7 @@ def _default(o):
 #        img_str = base64.b64encode(buf.read()).decode('UTF-8')    
 #        return img_str
     if "pandas.core.frame.DataFrame" in str(type(o)):
-        return o.to_json(orient='records')
+        return json.loads(o.to_json(orient='split'))
     if "folium.folium.Map" in str(type(o)):
         return o._repr_html_()
     if "geopandas.geodataframe.GeoDataFrame" in str(type(o)):
