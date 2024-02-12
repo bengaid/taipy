@@ -275,12 +275,13 @@ class _Server:
         host_value = host if host != "0.0.0.0" else "localhost"
         self._host = host
         self._port = port
+        debug_chlkt = False
         
         confc = argparse.Namespace(dev=False, sync=None, sync_clear=False, python_workers=None, xprjson_file=None, app_port=None, app_ip=None)
         config = chalkit.AppConfig(confc)
         root_manager = chalkit.RootManager(config, self.get_flask())
 
-        if debug:
+        if debug_chlkt:
             logging.getLogger('werkzeug').setLevel(logging.INFO)
 
         if _is_in_notebook() and notebook_proxy:  # pragma: no cover
@@ -326,7 +327,7 @@ class _Server:
         def print_routes():
             for rule in self.get_flask().url_map.iter_rules():
                 print(f'Endpoint: {rule.endpoint}, Route: {rule}')
-        if debug: 
+        if debug_chlkt: 
             print_routes()        
         self._ws.run(**run_config)
 

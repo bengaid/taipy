@@ -15,6 +15,7 @@ from json import JSONEncoder
 from pathlib import Path
 import io, base64
 import json
+from .chalkit_helper import *
 
 from flask.json.provider import DefaultJSONProvider
 
@@ -47,7 +48,9 @@ def _default(o):
     if "folium.folium.Map" in str(type(o)):
         return o._repr_html_()
     if "geopandas.geodataframe.GeoDataFrame" in str(type(o)):
-        return o.to_json()
+        return json.loads(o.to_json())
+    if "PIL.Image.Image" in str(type(o)):
+        return image_to_base64(o)        
     
     try:
         raise TypeError(f"Object of type {o.__class__.__name__} is not JSON serializable")
